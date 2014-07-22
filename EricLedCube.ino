@@ -155,7 +155,7 @@ void effetAllUp()
 
 void loop()
 {
-  static int i = 3;
+  static int i = 0;
   int timeon[4] = {1, 450, 1000, 2500};
 
   static unsigned long t = 0;
@@ -167,7 +167,7 @@ void loop()
   static unsigned long toff = 0;
   static unsigned long toff_n = 0;
 
-  if (n < 1000)
+  if (n < 999999)
   {
     unsigned long t1 = millis();
     unsigned long t1off;
@@ -238,7 +238,7 @@ void loop()
       //thisdata++;
       if (thisdata >= B00010000) thisdata = 0;
       thistime = millis();
-      //i++;
+      i++;
       if (i == 4) i = 0;
       //Serial.print(timeon[i]);
       //Serial.print("\n");
@@ -266,7 +266,7 @@ void loop()
       Serial.print("\n");
       Serial.print("LED CUBE STATISTICS\n");
       Serial.print("\n");
-      Serial.print("time on delay="); Serial.print(timeon[i]); Serial.print("us\n");
+      //Serial.print("time on delay="); Serial.print(timeon[i]); Serial.print("us\n");
       //Serial.print("t="); Serial.print(t); Serial.print("ms\n");
       //Serial.print("n="); Serial.print(n); Serial.print(" times\n");
       Serial.print("loop="); Serial.print((double)t / (double)n); Serial.print("ms\n");
