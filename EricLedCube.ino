@@ -25,7 +25,10 @@ int sr_srclk = 10;
 int wait = 500;
 
 boolean isInit = false;
-byte data = 0x00;
+volatile byte data = 0x00;
+byte currentp = 0;
+
+boolean toggle1 = 0;
 
 void message(int nb)
 {
@@ -49,6 +52,25 @@ void setup() {
   pinMode(sr_rclk, OUTPUT);
   pinMode(sr_ser, OUTPUT);
   pinMode(sr_srclk, OUTPUT);
+
+
+  cli();//stop interrupts
+
+  //set timer1 interrupt at 1Hz
+  TCCR1A = 0;// set entire TCCR1A register to 0
+  TCCR1B = 0;// same for TCCR1B
+  TCNT1  = 0;//initialize counter value to 0
+  // set compare match register for 1hz increments
+  OCR1A = 20;// = (16*10^6) / (1*1024) - 1 (must be <65536)
+  // turn on CTC mode
+  TCCR1B |= (1 << WGM12);
+  // Set CS10 and CS12 bits for 1024 prescaler
+  TCCR1B |= (1 << CS12) | (1 << CS10);  
+  // enable timer compare interrupt
+  TIMSK1 |= (1 << OCIE1A);
+
+  sei();//allow interrupts
+
 
   Serial.begin(115200);
 
@@ -150,8 +172,37 @@ void effetAllUp()
   }
 }
 
+ISR(TIMER1_COMPA_vect){//timer1 interrupt 1Hz toggles pin 13 (LED)
+  //generates pulse wave of frequency 1Hz/2 = 0.5kHz (takes two cycles for full wave- toggle high then toggle low)
+  /*if (toggle1){
+    digitalWrite(13,HIGH);
+    toggle1 = 0;
+  }
+  else{
+    digitalWrite(13,LOW);
+    toggle1 = 1;
+  }*/
+    /*digitalWrite(sr_oe, INACTIVE_AL);
+    shiftOut(shin, clock, LSBFIRST, data << 4);
+
+    digitalWrite(sr_rclk, LOW);
+    shiftOut(sr_ser, sr_srclk, MSBFIRST, B1 << currentp++);
+    digitalWrite(sr_rclk, HIGH);
+    digitalWrite(sr_oe, ACTIVE_AL);
+
+    if (currentp > 3) currentp = 0;*/
+}
+
 #define TEST true
 #define TIMEON 450
+
+void loop5()
+{
+  //data++;
+  //if (data >= B00010000) data = 0;
+  data=255;
+  delay(333);
+}
 
 void loop()
 {
@@ -167,13 +218,13 @@ void loop()
   static unsigned long toff = 0;
   static unsigned long toff_n = 0;
 
-  if (n < 1000)
+  if (n < 5000)
   {
     unsigned long t1 = millis();
     unsigned long t1off;
     unsigned long t1on;
 
-    static byte thisdata = B00000000;
+    static byte thisdata = B00001111;
     static unsigned long thistime = millis();
 
     digitalWrite(sr_oe, INACTIVE_AL);
@@ -227,9 +278,9 @@ void loop()
     shiftOut(sr_ser, sr_srclk, MSBFIRST, B00001000);
     digitalWrite(sr_rclk, HIGH);
 
-    if ((millis() - thistime) >= 333)
+    if ((millis() - thistime) >= 1000)
     {
-      thisdata++;
+      //thisdata++;
       if (thisdata >= B00010000) thisdata = 0;
       thistime = millis();
       //i++;

@@ -47,6 +47,7 @@ void effetChaserContinu();
 void effetChaser();
 void effetChaserDouble();
 void effetAllUp();
+void loop5();
 //
 void loop3();
 void loop2();
