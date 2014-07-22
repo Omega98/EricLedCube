@@ -172,7 +172,8 @@ void effetAllUp()
   }
 }
 
-ISR(TIMER1_COMPA_vect){//timer1 interrupt 1Hz toggles pin 13 (LED)
+inline void inttimer1(void)
+{//timer1 interrupt 1Hz toggles pin 13 (LED)
   //generates pulse wave of frequency 1Hz/2 = 0.5kHz (takes two cycles for full wave- toggle high then toggle low)
   /*if (toggle1){
     digitalWrite(13,HIGH);
@@ -191,6 +192,11 @@ ISR(TIMER1_COMPA_vect){//timer1 interrupt 1Hz toggles pin 13 (LED)
     digitalWrite(sr_oe, ACTIVE_AL);
 
     if (currentp > 3) currentp = 0;*/
+}
+
+ISR(TIMER1_COMPA_vect)
+{
+	inttimer1();
 }
 
 #define TEST true
