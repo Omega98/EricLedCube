@@ -155,7 +155,7 @@ void effetAllUp()
 
 void loop()
 {
-  static int i = 0;
+  static int i = 2;
   int timeon[4] = {1, 450, 1000, 2500};
 
   static unsigned long t = 0;
@@ -167,13 +167,13 @@ void loop()
   static unsigned long toff = 0;
   static unsigned long toff_n = 0;
 
-  if (n < 999999)
+  if (n < 1000)
   {
     unsigned long t1 = millis();
     unsigned long t1off;
     unsigned long t1on;
 
-    static byte thisdata = B00001111;
+    static byte thisdata = B00000000;
     static unsigned long thistime = millis();
 
     digitalWrite(sr_oe, INACTIVE_AL);
@@ -188,7 +188,6 @@ void loop()
     shiftOut(sr_ser, sr_srclk, MSBFIRST, B00000001);
     digitalWrite(sr_rclk, HIGH);
 
-    if (TEST) {
     digitalWrite(sr_oe, INACTIVE_AL);
     t1off = millis();
     ton += t1off - t1on;
@@ -197,13 +196,11 @@ void loop()
     t1on = millis();
     delayMicroseconds(timeon[i]);
     toff += t1on - t1off;
-    }
 
     digitalWrite(sr_rclk, LOW);
     shiftOut(sr_ser, sr_srclk, MSBFIRST, B00000010);
     digitalWrite(sr_rclk, HIGH);
 
-    if (TEST) {
     digitalWrite(sr_oe, INACTIVE_AL);
     t1off = millis();
     ton += t1off - t1on;
@@ -212,13 +209,11 @@ void loop()
     t1on = millis();
     delayMicroseconds(timeon[i]);
     toff += t1on - t1off;
-    }
 
     digitalWrite(sr_rclk, LOW);
     shiftOut(sr_ser, sr_srclk, MSBFIRST, B00000100);
     digitalWrite(sr_rclk, HIGH);
 
-    if (TEST) {
     digitalWrite(sr_oe, INACTIVE_AL);
     t1off = millis();
     ton += t1off - t1on;
@@ -227,19 +222,18 @@ void loop()
     t1on = millis();
     delayMicroseconds(timeon[i]);
     toff += t1on - t1off;
-    }
 
     digitalWrite(sr_rclk, LOW);
     shiftOut(sr_ser, sr_srclk, MSBFIRST, B00001000);
     digitalWrite(sr_rclk, HIGH);
 
-    if ((millis() - thistime) >= 1000)
+    if ((millis() - thistime) >= 333)
     {
-      //thisdata++;
+      thisdata++;
       if (thisdata >= B00010000) thisdata = 0;
       thistime = millis();
-      i++;
-      if (i == 4) i = 0;
+      //i++;
+      //if (i == 4) i = 0;
       //Serial.print(timeon[i]);
       //Serial.print("\n");
     }
