@@ -7,7 +7,8 @@
 #define ACTIVE_AH HIGH
 #define INACTIVE_AH LOW
 
-#define ALWAYS_ON false
+#define ALWAYS_ON true
+#define ALWAYS_ON_EFFET 2
 
 #define NB_MAX_EFFET 5
 
@@ -21,13 +22,24 @@ int sr_oe = 7;
 int sr_rclk = 8;
 int sr_srclk = 10;
 
-int wait = 100;
+int wait = 500;
 
 boolean isInit = false;
 byte data = 0x00;
 
+void message(int nb)
+{
+  for (int i=0; i<nb; i++)
+  {
+    digitalWrite(led, HIGH);
+    delay(10);
+    digitalWrite(led, LOW);
+    delay(90);
+  }
+}
+
 // the setup routine runs once when you press reset:
-void setup() {                
+void setup() { 
   // initialize the digital pin as an output.
   pinMode(led, OUTPUT);     
   pinMode(clock, OUTPUT);     
@@ -38,64 +50,25 @@ void setup() {
   pinMode(sr_ser, OUTPUT);
   pinMode(sr_srclk, OUTPUT);
 
+  Serial.begin(115200);
+
   digitalWrite(sr_oe, INACTIVE_AL);
-
   digitalWrite(sr_rclk, LOW);
-  shiftOut(sr_ser, sr_srclk, MSBFIRST, B00000001);
+  shiftOut(sr_ser, sr_srclk, MSBFIRST, B00000000);
   digitalWrite(sr_rclk, HIGH);
-
   digitalWrite(sr_oe, ACTIVE_AL);
 
-  //digitalWrite(gnd, LOW);
-  //shiftOut(shin, clock, LSBFIRST, 0x00);
-    
-//  digitalWrite(shin, LOW);
-//  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);
-//  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);
-//  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);
-//  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);
-//  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);
-//  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);
-//  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);
-//  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);
-
   delay(1);
+
+  while (!Serial) {
+    ;
+  }
 }
 
 void updateLeds()
 {
-  //digitalWrite(gnd, LOW);
   digitalWrite(sr_oe, INACTIVE_AL);
-
   shiftOut(shin, clock, LSBFIRST, data);
-  
-//  byte thisData = data;
-//  
-//  digitalWrite(shin, thisData & 0x01);
-//  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);
-//  thisData = thisData >> 1;
-//  digitalWrite(shin, thisData & 0x01);
-//  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);
-//  thisData = thisData >> 1;
-//  digitalWrite(shin, thisData & 0x01);
-//  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);
-//  thisData = thisData >> 1;
-//  digitalWrite(shin, thisData & 0x01);
-//  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);
-//  thisData = thisData >> 1;
-//  digitalWrite(shin, thisData & 0x01);
-//  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);
-//  thisData = thisData >> 1;
-//  digitalWrite(shin, thisData & 0x01);
-//  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);
-//  thisData = thisData >> 1;
-//  digitalWrite(shin, thisData & 0x01);
-//  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);
-//  thisData = thisData >> 1;
-//  digitalWrite(shin, thisData & 0x01);
-//  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);
-  
-  //digitalWrite(gnd, HIGH);  
   digitalWrite(sr_oe, ACTIVE_AL);	  
 }
 
@@ -177,16 +150,143 @@ void effetAllUp()
   }
 }
 
-void loop3()
-{
-}
+#define TEST true
+#define TIMEON 450
 
 void loop()
+{
+  static int i = 3;
+  int timeon[4] = {1, 450, 1000, 2500};
+
+  static unsigned long t = 0;
+  static unsigned long n = 0;
+
+  static unsigned long ton = 0;
+  static unsigned long ton_n = 0;
+
+  static unsigned long toff = 0;
+  static unsigned long toff_n = 0;
+
+  if (n < 1000)
+  {
+    unsigned long t1 = millis();
+    unsigned long t1off;
+    unsigned long t1on;
+
+    static byte thisdata = B00001111;
+    static unsigned long thistime = millis();
+
+    digitalWrite(sr_oe, INACTIVE_AL);
+    t1off = t1;
+    shiftOut(shin, clock, LSBFIRST, thisdata << 4);
+    digitalWrite(sr_oe, ACTIVE_AL);
+    t1on = millis();
+    delayMicroseconds(timeon[i]);
+    toff += t1on - t1off;
+
+    digitalWrite(sr_rclk, LOW);
+    shiftOut(sr_ser, sr_srclk, MSBFIRST, B00000001);
+    digitalWrite(sr_rclk, HIGH);
+
+    if (TEST) {
+    digitalWrite(sr_oe, INACTIVE_AL);
+    t1off = millis();
+    ton += t1off - t1on;
+    shiftOut(shin, clock, LSBFIRST, thisdata << 4);
+    digitalWrite(sr_oe, ACTIVE_AL); 
+    t1on = millis();
+    delayMicroseconds(timeon[i]);
+    toff += t1on - t1off;
+    }
+
+    digitalWrite(sr_rclk, LOW);
+    shiftOut(sr_ser, sr_srclk, MSBFIRST, B00000010);
+    digitalWrite(sr_rclk, HIGH);
+
+    if (TEST) {
+    digitalWrite(sr_oe, INACTIVE_AL);
+    t1off = millis();
+    ton += t1off - t1on;
+    shiftOut(shin, clock, LSBFIRST, thisdata << 4);
+    digitalWrite(sr_oe, ACTIVE_AL); 
+    t1on = millis();
+    delayMicroseconds(timeon[i]);
+    toff += t1on - t1off;
+    }
+
+    digitalWrite(sr_rclk, LOW);
+    shiftOut(sr_ser, sr_srclk, MSBFIRST, B00000100);
+    digitalWrite(sr_rclk, HIGH);
+
+    if (TEST) {
+    digitalWrite(sr_oe, INACTIVE_AL);
+    t1off = millis();
+    ton += t1off - t1on;
+    shiftOut(shin, clock, LSBFIRST, thisdata << 4);
+    digitalWrite(sr_oe, ACTIVE_AL); 
+    t1on = millis();
+    delayMicroseconds(timeon[i]);
+    toff += t1on - t1off;
+    }
+
+    digitalWrite(sr_rclk, LOW);
+    shiftOut(sr_ser, sr_srclk, MSBFIRST, B00001000);
+    digitalWrite(sr_rclk, HIGH);
+
+    if ((millis() - thistime) >= 1000)
+    {
+      //thisdata++;
+      if (thisdata >= B00010000) thisdata = 0;
+      thistime = millis();
+      //i++;
+      if (i == 4) i = 0;
+      //Serial.print(timeon[i]);
+      //Serial.print("\n");
+    }
+
+    unsigned long t2 = millis();
+    ton += t2 - t1on;
+    t += t2 - t1;
+    n++;
+  }
+  else
+  {
+    static boolean done = false;
+    if (!done)
+    {
+      shiftOut(shin, clock, LSBFIRST, B00010000);
+      digitalWrite(sr_rclk, LOW);
+      shiftOut(sr_ser, sr_srclk, MSBFIRST, B00001000);
+      digitalWrite(sr_rclk, HIGH);
+
+      digitalWrite(sr_oe, INACTIVE_AL);
+      
+      Serial.print("\n");
+      Serial.print("\n");
+      Serial.print("\n");
+      Serial.print("LED CUBE STATISTICS\n");
+      Serial.print("\n");
+      Serial.print("time on delay="); Serial.print(timeon[i]); Serial.print("us\n");
+      //Serial.print("t="); Serial.print(t); Serial.print("ms\n");
+      //Serial.print("n="); Serial.print(n); Serial.print(" times\n");
+      Serial.print("loop="); Serial.print((double)t / (double)n); Serial.print("ms\n");
+      //Serial.print("toff="); Serial.print(toff); Serial.print("ms\n");
+      Serial.print("toff/loop="); Serial.print((double)toff / (double)n); Serial.print("ms\n");
+      //Serial.print("ton="); Serial.print(ton); Serial.print("ms\n");
+      Serial.print("ton/loop="); Serial.print((double)ton / (double)n); Serial.print("ms\n");
+      Serial.print("duty cycle="); Serial.print(100.0 * ((double)ton / (double)n) / ((double)t / (double)n)); Serial.print("%\n");
+      Serial.print("refresh rate="); Serial.print(1000.0 / ((double)t / (double)n)); Serial.print("Hz\n");
+    }
+    done = true;
+  }
+}
+
+void loop3()
 {
   static byte effet = 1;
   static unsigned long elapsed = millis();
   
-  if (ALWAYS_ON) effet = 5;
+  if (ALWAYS_ON) effet = ALWAYS_ON_EFFET;
 
   switch(effet) {
     case 1: 
@@ -213,17 +313,7 @@ void loop()
     if (effet > NB_MAX_EFFET) effet = 1;
     isInit = false;
     
-    digitalWrite(led, HIGH);
-    delay(10);
-    digitalWrite(led, LOW);
-    delay(90);
-    digitalWrite(led, HIGH);
-    delay(10);
-    digitalWrite(led, LOW);
-    delay(90);
-    digitalWrite(led, HIGH);
-    delay(10);
-    digitalWrite(led, LOW);
+    message(3);
 
     elapsed = millis();
   }

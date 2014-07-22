@@ -39,6 +39,7 @@
 typedef unsigned char byte;
 extern "C" void __cxa_pure_virtual() {;}
 
+void message(int nb);
 //
 void updateLeds();
 void effetRandom();
@@ -46,8 +47,8 @@ void effetChaserContinu();
 void effetChaser();
 void effetChaserDouble();
 void effetAllUp();
-void loop3();
 //
+void loop3();
 void loop2();
 void loop1();
 
