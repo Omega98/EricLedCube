@@ -63,7 +63,7 @@ ton/loop=1.03ms
 duty cycle=81.00%
 refresh rate=788.27Hz
 Icol = 10.9mA
-(Icol avec interrupt à 4*788Hz = 10.4mA)
+(Icol avec interrupt à 4*788Hz = 10.9mA)
 
 LED CUBE STATISTICS
 
