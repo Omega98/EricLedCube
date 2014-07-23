@@ -13,14 +13,14 @@
 #define NB_MAX_EFFET 5
 
 // Pin 13 has an LED connected on most Arduino boards.
-int led = 13;
-int clock = 2;
-int shin = 3;
+int led = 13;  // PORTC7
+int clock = 2; // PORTD1
+int shin = 3;  // PORTD0
 
-int sr_ser = 5;
-int sr_oe = 7;
-int sr_rclk = 8;
-int sr_srclk = 10;
+int sr_ser = 5;    // PORTC6
+int sr_oe = 7;     // PORTE6
+int sr_rclk = 8;   // PORTB4
+int sr_srclk = 10; // PORTB6
 
 int wait = 500;
 
@@ -29,6 +29,8 @@ volatile byte data = 0x00;
 byte currentp = 0;
 
 boolean toggle1 = 0;
+
+volatile byte data2[4] = {0, 0, 0, 0};
 
 void message(int nb)
 {
@@ -61,7 +63,7 @@ void setup() {
   TCCR1B = 0;// same for TCCR1B
   TCNT1  = 0;//initialize counter value to 0
   // set compare match register for 1hz increments
-  OCR1A = 20;// = (16*10^6) / (1*1024) - 1 (must be <65536)
+  OCR1A = 4;// = (16*10^6) / (1*1024) - 1 (must be <65536)
   // turn on CTC mode
   TCCR1B |= (1 << WGM12);
   // Set CS10 and CS12 bits for 1024 prescaler
@@ -82,8 +84,10 @@ void setup() {
 
   delay(1);
 
-  while (!Serial) {
-    ;
+  while (!Serial)
+  {
+    message(3);
+    delay(100);
   }
 }
 
@@ -192,6 +196,26 @@ inline void inttimer1(void)
     digitalWrite(sr_oe, ACTIVE_AL);
 
     if (currentp > 3) currentp = 0;*/
+
+    PORTE |= (1 << PORTE6);                           // digitalWrite(sr_oe, INACTIVE_AL);
+    for(int i=0; i<8; i++)
+    {
+      PORTD &= ~(1 << PORTD1);
+      PORTD = (PORTD & ~(1 << PORTD0)) | ((((data2[currentp] << 4) >> i) & 1) << PORTD0);
+      PORTD |= (1 << PORTD1);
+    }                                                 // shiftOut(shin, clock, LSBFIRST, thisdata << 4);
+    PORTB &= ~(1 << PORTB4);                          // digitalWrite(sr_rclk, LOW);
+    for(int i=7; i>=0; i--)
+    {
+      PORTB &= ~(1 << PORTB6);
+      PORTC = (PORTC & ~(1 << PORTC6)) | ((((1 << currentp) >> i) & 1) << PORTC6);
+      PORTB |= (1 << PORTB6);
+    }                                                 // shiftOut(sr_ser, sr_srclk, MSBFIRST, B00000001);
+    PORTB |= (1 << PORTB4);                           // digitalWrite(sr_rclk, HIGH);
+    PORTE &= ~(1 << PORTE6);                          // digitalWrite(sr_oe, ACTIVE_AL);
+
+    currentp++;
+    if (currentp > 3) currentp = 0;
 }
 
 ISR(TIMER1_COMPA_vect)
@@ -202,18 +226,33 @@ ISR(TIMER1_COMPA_vect)
 #define TEST true
 #define TIMEON 450
 
-void loop5()
+void loop()
 {
-  //data++;
-  //if (data >= B00010000) data = 0;
-  data=255;
+  boolean count = false;
+  if (count)
+  {
+    data++;
+    if (data >= B00010000) data = 0;
+    data2[0] = data;
+    data2[1] = data;
+    data2[2] = data;
+    data2[3] = data;
+  }
+  else
+  {
+    data=B00001111;
+    data2[0] = B1111;
+    data2[1] = B1111;
+    data2[2] = B1111;
+    data2[3] = B1111;
+  }
   delay(333);
 }
 
-void loop()
+void loop5()
 {
-  static int i = 2;
-  int timeon[4] = {1, 450, 1000, 2500};
+  static int i = 0;
+  int timeon[4] = {250, 450, 1000, 2500};
 
   static unsigned long t = 0;
   static unsigned long n = 0;
@@ -233,58 +272,98 @@ void loop()
     static byte thisdata = B00001111;
     static unsigned long thistime = millis();
 
-    digitalWrite(sr_oe, INACTIVE_AL);
+    PORTE |= (1 << PORTE6);                           // digitalWrite(sr_oe, INACTIVE_AL);
     t1off = t1;
-    shiftOut(shin, clock, LSBFIRST, thisdata << 4);
-    digitalWrite(sr_oe, ACTIVE_AL);
+    for(int i=0; i<8; i++)
+    {
+      PORTD &= ~(1 << PORTD1);
+      PORTD = (PORTD & ~(1 << PORTD0)) | ((((thisdata << 4) >> i) & 1) << PORTD0);
+      PORTD |= (1 << PORTD1);
+    }                                                 // shiftOut(shin, clock, LSBFIRST, thisdata << 4);
+    PORTB &= ~(1 << PORTB4);                          // digitalWrite(sr_rclk, LOW);
+    for(int i=7; i>=0; i--)
+    {
+      PORTB &= ~(1 << PORTB6);
+      PORTC = (PORTC & ~(1 << PORTC6)) | (((B00000001 >> i) & 1) << PORTC6);
+      PORTB |= (1 << PORTB6);
+    }                                                 // shiftOut(sr_ser, sr_srclk, MSBFIRST, B00000001);
+    PORTB |= (1 << PORTB4);                           // digitalWrite(sr_rclk, HIGH);
+    PORTE &= ~(1 << PORTE6);                          // digitalWrite(sr_oe, ACTIVE_AL);
     t1on = millis();
-    delayMicroseconds(timeon[i]);
     toff += t1on - t1off;
+    
+    delayMicroseconds(timeon[i]);
 
-    digitalWrite(sr_rclk, LOW);
-    shiftOut(sr_ser, sr_srclk, MSBFIRST, B00000001);
-    digitalWrite(sr_rclk, HIGH);
-
-    digitalWrite(sr_oe, INACTIVE_AL);
+    PORTE |= (1 << PORTE6);                           // digitalWrite(sr_oe, INACTIVE_AL);
     t1off = millis();
     ton += t1off - t1on;
-    shiftOut(shin, clock, LSBFIRST, thisdata << 4);
-    digitalWrite(sr_oe, ACTIVE_AL); 
+    for(int i=0; i<8; i++)
+    {
+      PORTD &= ~(1 << PORTD1);
+      PORTD = (PORTD & ~(1 << PORTD0)) | ((((thisdata << 4) >> i) & 1) << PORTD0);
+      PORTD |= (1 << PORTD1);
+    }                                                 // shiftOut(shin, clock, LSBFIRST, thisdata << 4);
+    PORTB &= ~(1 << PORTB4);                          // digitalWrite(sr_rclk, LOW);
+    for(int i=7; i>=0; i--)
+    {
+      PORTB &= ~(1 << PORTB6);
+      PORTC = (PORTC & ~(1 << PORTC6)) | (((B00000010 >> i) & 1) << PORTC6);
+      PORTB |= (1 << PORTB6);
+    }                                                 // shiftOut(sr_ser, sr_srclk, MSBFIRST, B00000010);
+    PORTB |= (1 << PORTB4);                           // digitalWrite(sr_rclk, HIGH);
+    PORTE &= ~(1 << PORTE6);                          // digitalWrite(sr_oe, ACTIVE_AL); 
     t1on = millis();
-    delayMicroseconds(timeon[i]);
     toff += t1on - t1off;
 
-    digitalWrite(sr_rclk, LOW);
-    shiftOut(sr_ser, sr_srclk, MSBFIRST, B00000010);
-    digitalWrite(sr_rclk, HIGH);
-
-    digitalWrite(sr_oe, INACTIVE_AL);
+    delayMicroseconds(timeon[i]);
+    
+    PORTE |= (1 << PORTE6);                           // digitalWrite(sr_oe, INACTIVE_AL);
     t1off = millis();
     ton += t1off - t1on;
-    shiftOut(shin, clock, LSBFIRST, thisdata << 4);
-    digitalWrite(sr_oe, ACTIVE_AL); 
+    for(int i=0; i<8; i++)
+    {
+      PORTD &= ~(1 << PORTD1);
+      PORTD = (PORTD & ~(1 << PORTD0)) | ((((thisdata << 4) >> i) & 1) << PORTD0);
+      PORTD |= (1 << PORTD1);
+    }                                                 // shiftOut(shin, clock, LSBFIRST, thisdata << 4);
+    PORTB &= ~(1 << PORTB4);                          // digitalWrite(sr_rclk, LOW);
+    for(int i=7; i>=0; i--)
+    {
+      PORTB &= ~(1 << PORTB6);
+      PORTC = (PORTC & ~(1 << PORTC6)) | (((B00000100 >> i) & 1) << PORTC6);
+      PORTB |= (1 << PORTB6);
+    }                                                 // shiftOut(sr_ser, sr_srclk, MSBFIRST, B00000100);
+    PORTB |= (1 << PORTB4);                           // digitalWrite(sr_rclk, HIGH);
+    PORTE &= ~(1 << PORTE6);                          // digitalWrite(sr_oe, ACTIVE_AL); 
     t1on = millis();
-    delayMicroseconds(timeon[i]);
     toff += t1on - t1off;
 
-    digitalWrite(sr_rclk, LOW);
-    shiftOut(sr_ser, sr_srclk, MSBFIRST, B00000100);
-    digitalWrite(sr_rclk, HIGH);
+    delayMicroseconds(timeon[i]);
 
-    digitalWrite(sr_oe, INACTIVE_AL);
+    PORTE |= (1 << PORTE6);                           // digitalWrite(sr_oe, INACTIVE_AL);
     t1off = millis();
     ton += t1off - t1on;
-    shiftOut(shin, clock, LSBFIRST, thisdata << 4);
-    digitalWrite(sr_oe, ACTIVE_AL); 
+    for(int i=0; i<8; i++)
+    {
+      PORTD &= ~(1 << PORTD1);
+      PORTD = (PORTD & ~(1 << PORTD0)) | ((((thisdata << 4) >> i) & 1) << PORTD0);
+      PORTD |= (1 << PORTD1);
+    }                                                 // shiftOut(shin, clock, LSBFIRST, thisdata << 4);
+    PORTB &= ~(1 << PORTB4);                          // digitalWrite(sr_rclk, LOW);
+    for(int i=7; i>=0; i--)
+    {
+      PORTB &= ~(1 << PORTB6);
+      PORTC = (PORTC & ~(1 << PORTC6)) | (((B00001000 >> i) & 1) << PORTC6);
+      PORTB |= (1 << PORTB6);
+    }                                                 // shiftOut(sr_ser, sr_srclk, MSBFIRST, B00001000);
+    PORTB |= (1 << PORTB4);                           // digitalWrite(sr_rclk, HIGH);
+    PORTE &= ~(1 << PORTE6);                          // digitalWrite(sr_oe, ACTIVE_AL); 
     t1on = millis();
-    delayMicroseconds(timeon[i]);
     toff += t1on - t1off;
 
-    digitalWrite(sr_rclk, LOW);
-    shiftOut(sr_ser, sr_srclk, MSBFIRST, B00001000);
-    digitalWrite(sr_rclk, HIGH);
-
-    if ((millis() - thistime) >= 1000)
+    delayMicroseconds(timeon[i]);
+    
+    if ((millis() - thistime) >= 333)
     {
       //thisdata++;
       if (thisdata >= B00010000) thisdata = 0;
@@ -314,10 +393,9 @@ void loop()
       
       Serial.print("\n");
       Serial.print("\n");
-      Serial.print("\n");
       Serial.print("LED CUBE STATISTICS\n");
       Serial.print("\n");
-      //Serial.print("time on delay="); Serial.print(timeon[i]); Serial.print("us\n");
+      Serial.print("time on delay="); Serial.print(timeon[i]); Serial.print("us\n");
       //Serial.print("t="); Serial.print(t); Serial.print("ms\n");
       //Serial.print("n="); Serial.print(n); Serial.print(" times\n");
       Serial.print("loop="); Serial.print((double)t / (double)n); Serial.print("ms\n");
@@ -327,6 +405,7 @@ void loop()
       Serial.print("ton/loop="); Serial.print((double)ton / (double)n); Serial.print("ms\n");
       Serial.print("duty cycle="); Serial.print(100.0 * ((double)ton / (double)n) / ((double)t / (double)n)); Serial.print("%\n");
       Serial.print("refresh rate="); Serial.print(1000.0 / ((double)t / (double)n)); Serial.print("Hz\n");
+      Serial.print("\n");
     }
     done = true;
   }
