@@ -94,3 +94,36 @@ ton/loop=10.16ms
 duty cycle=97.68%
 refresh rate=96.17Hz
 Icol = 13mA
+
+Sans 74595 pour driver les Darlington (4 IO directs)
+
+LED CUBE STATISTICS
+
+time on delay=250us
+loop=1.13ms
+toff/loop=0.10ms
+ton/loop=1.03ms
+duty cycle=91.38%
+refresh rate=888.57Hz
+Icol = 12.3mA
+
+LED CUBE STATISTICS
+
+time on delay=76us
+loop=0.42ms
+toff/loop=0.10ms
+ton/loop=0.32ms
+duty cycle=77.17%
+refresh rate=2398.08Hz
+Icol = 11mA
+
+Sans 74595, en simulant une latch à place d'un SR 74164
+
+LED CUBE STATISTICS
+
+time on delay=16us
+loop=101.90us
+toff/loop=19.07us
+ton/loop=82.82us
+duty cycle=81.28%
+refresh rate=9813.81Hz

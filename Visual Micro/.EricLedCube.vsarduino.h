@@ -48,8 +48,8 @@ void effetChaser();
 void effetChaserDouble();
 void effetAllUp();
 inline void inttimer1(void);
-//
 void loop5();
+//
 void loop3();
 void loop2();
 void loop1();
