@@ -15,11 +15,11 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="EricLedCube.ino" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="Visual Micro\.EricLedCube.vsarduino.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="EricLedCube.ino" />
   </ItemGroup>
 </Project>
