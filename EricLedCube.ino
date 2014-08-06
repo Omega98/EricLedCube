@@ -28,14 +28,12 @@ int sr_srclk = 10; // PORTB6
 #endif
 
 int wait = 500;
-
 boolean isInit = false;
-volatile byte data = 0x00;
+
 byte currentp = 0;
+volatile byte data = 0x00;
+volatile byte thisdata[4] = {0, 0, 0, 0};
 
-boolean toggle1 = 0;
-
-volatile byte data2[4] = {0, 0, 0, 0};
 
 void message(int nb)
 {
@@ -239,9 +237,6 @@ ISR(TIMER1_COMPA_vect)
 }
 #endif
 
-#define TEST true
-#define TIMEON 450
-
 #if USE_IRQ_TIMER1 == true
 void loop()
 {
@@ -250,18 +245,18 @@ void loop()
   {
     data++;
     if (data >= B00010000) data = 0;
-    data2[0] = data;
-    data2[1] = data;
-    data2[2] = data;
-    data2[3] = data;
+    thisdata[0] = data;
+    thisdata[1] = data;
+    thisdata[2] = data;
+    thisdata[3] = data;
   }
   else
   {
     data=B00001111;
-    data2[0] = B1111;
-    data2[1] = B1111;
-    data2[2] = B1111;
-    data2[3] = B1111;
+    thisdata[0] = B1111;
+    thisdata[1] = B1111;
+    thisdata[2] = B1111;
+    thisdata[3] = B1111;
   }
   delay(333);
 }
@@ -288,134 +283,40 @@ void loop()
     unsigned long t1off;
     unsigned long t1on;
 
-    static byte thisdata = B00001111;
     static unsigned long thistime = millis();
 
-#if USE_74HC595 == true
-    PORTE |= (1 << PORTE6);                           // digitalWrite(sr_oe, INACTIVE_AL);
-#else
-    PORTF &= B00001111; 
-#endif
-    t1off = t1;
-    for(int i=0; i<8; i++)
+    for(int plane=0; plane<4; plane++)
     {
-      PORTD &= ~(1 << PORTD1);
-      PORTD = (PORTD & ~(1 << PORTD0)) | ((((thisdata << 4) >> i) & 1) << PORTD0);
-      PORTD |= (1 << PORTD1);
-    }                                                 // shiftOut(shin, clock, LSBFIRST, thisdata << 4);
 #if USE_74HC595 == true
-    PORTB &= ~(1 << PORTB4);                          // digitalWrite(sr_rclk, LOW);
-    for(int i=7; i>=0; i--)
-    {
-      PORTB &= ~(1 << PORTB6);
-      PORTC = (PORTC & ~(1 << PORTC6)) | (((B00000001 >> i) & 1) << PORTC6);
-      PORTB |= (1 << PORTB6);
-    }                                                 // shiftOut(sr_ser, sr_srclk, MSBFIRST, B00000001);
-    PORTB |= (1 << PORTB4);                           // digitalWrite(sr_rclk, HIGH);
-    PORTE &= ~(1 << PORTE6);                          // digitalWrite(sr_oe, ACTIVE_AL);
+        PORTE |= (1 << PORTE6);                           // digitalWrite(sr_oe, INACTIVE_AL);
 #else
-    PORTF |= (1 << PORTF7);
+        PORTF &= B00001111; 
 #endif
-    t1on = micros();
-    toff += t1on - t1off;
+        t1off = t1;
+        for(int i=0; i<8; i++)
+        {
+          PORTD &= ~(1 << PORTD1);
+          PORTD = (PORTD & ~(1 << PORTD0)) | ((((thisdata[plane] << 4) >> i) & 1) << PORTD0);
+          PORTD |= (1 << PORTD1);
+        }                                                 // shiftOut(shin, clock, LSBFIRST, thisdata << 4);
+#if USE_74HC595 == true
+        PORTB &= ~(1 << PORTB4);                          // digitalWrite(sr_rclk, LOW);
+        for(int i=7; i>=0; i--)
+        {
+          PORTB &= ~(1 << PORTB6);
+          PORTC = (PORTC & ~(1 << PORTC6)) | ((((1 << plane) >> i) & 1) << PORTC6);
+          PORTB |= (1 << PORTB6);
+        }                                                 // shiftOut(sr_ser, sr_srclk, MSBFIRST, B00000001);
+        PORTB |= (1 << PORTB4);                           // digitalWrite(sr_rclk, HIGH);
+        PORTE &= ~(1 << PORTE6);                          // digitalWrite(sr_oe, ACTIVE_AL);
+#else
+        PORTF |= (1 << PORTF7);
+#endif
+        t1on = micros();
+        toff += t1on - t1off;
     
-    delayMicroseconds(timeon[i]);
-
-#if USE_74HC595 == true
-    PORTE |= (1 << PORTE6);                           // digitalWrite(sr_oe, INACTIVE_AL);
-#else
-    PORTF &= B00001111;
-#endif
-    t1off = micros();
-    ton += t1off - t1on;
-    PORTD |= 0x00;
-    for(int i=0; i<8; i++)
-    {
-      PORTD &= ~(1 << PORTD1);
-      PORTD = (PORTD & ~(1 << PORTD0)) | ((((thisdata << 4) >> i) & 1) << PORTD0);
-      PORTD |= (1 << PORTD1);
-    }                                                 // shiftOut(shin, clock, LSBFIRST, thisdata << 4);
-#if USE_74HC595 == true
-    PORTB &= ~(1 << PORTB4);                          // digitalWrite(sr_rclk, LOW);
-    for(int i=7; i>=0; i--)
-    {
-      PORTB &= ~(1 << PORTB6);
-      PORTC = (PORTC & ~(1 << PORTC6)) | (((B00000010 >> i) & 1) << PORTC6);
-      PORTB |= (1 << PORTB6);
-    }                                                 // shiftOut(sr_ser, sr_srclk, MSBFIRST, B00000001);
-    PORTB |= (1 << PORTB4);                           // digitalWrite(sr_rclk, HIGH);
-    PORTE &= ~(1 << PORTE6);                          // digitalWrite(sr_oe, ACTIVE_AL);
-#else
-    PORTF |= (1 << PORTF6);
-#endif
-    t1on = micros();
-    toff += t1on - t1off;
-
-    delayMicroseconds(timeon[i]);
-    
-#if USE_74HC595 == true
-    PORTE |= (1 << PORTE6);                           // digitalWrite(sr_oe, INACTIVE_AL);
-#else
-    PORTF &= B00001111;
-#endif
-    t1off = micros();
-    ton += t1off - t1on;
-    PORTD |= 0x00;
-    for(int i=0; i<8; i++)
-    {
-      PORTD &= ~(1 << PORTD1);
-      PORTD = (PORTD & ~(1 << PORTD0)) | ((((thisdata << 4) >> i) & 1) << PORTD0);
-      PORTD |= (1 << PORTD1);
-    }                                                 // shiftOut(shin, clock, LSBFIRST, thisdata << 4);
-#if USE_74HC595 == true
-    PORTB &= ~(1 << PORTB4);                          // digitalWrite(sr_rclk, LOW);
-    for(int i=7; i>=0; i--)
-    {
-      PORTB &= ~(1 << PORTB6);
-      PORTC = (PORTC & ~(1 << PORTC6)) | (((B00000100 >> i) & 1) << PORTC6);
-      PORTB |= (1 << PORTB6);
-    }                                                 // shiftOut(sr_ser, sr_srclk, MSBFIRST, B00000001);
-    PORTB |= (1 << PORTB4);                           // digitalWrite(sr_rclk, HIGH);
-    PORTE &= ~(1 << PORTE6);                          // digitalWrite(sr_oe, ACTIVE_AL);
-#else
-    PORTF |= (1 << PORTF5);
-#endif
-    t1on = micros();
-    toff += t1on - t1off;
-
-    delayMicroseconds(timeon[i]);
-
-#if USE_74HC595 == true
-    PORTE |= (1 << PORTE6);                           // digitalWrite(sr_oe, INACTIVE_AL);
-#else
-    PORTF &= B00001111;
-#endif
-    t1off = micros();
-    ton += t1off - t1on;
-    PORTD |= 0x00;
-    for(int i=0; i<8; i++)
-    {
-      PORTD &= ~(1 << PORTD1);
-      PORTD = (PORTD & ~(1 << PORTD0)) | ((((thisdata << 4) >> i) & 1) << PORTD0);
-      PORTD |= (1 << PORTD1);
-    }                                                 // shiftOut(shin, clock, LSBFIRST, thisdata << 4);
-#if USE_74HC595 == true
-    PORTB &= ~(1 << PORTB4);                          // digitalWrite(sr_rclk, LOW);
-    for(int i=7; i>=0; i--)
-    {
-      PORTB &= ~(1 << PORTB6);
-      PORTC = (PORTC & ~(1 << PORTC6)) | (((B00001000 >> i) & 1) << PORTC6);
-      PORTB |= (1 << PORTB6);
-    }                                                 // shiftOut(sr_ser, sr_srclk, MSBFIRST, B00000001);
-    PORTB |= (1 << PORTB4);                           // digitalWrite(sr_rclk, HIGH);
-    PORTE &= ~(1 << PORTE6);                          // digitalWrite(sr_oe, ACTIVE_AL);
-#else
-    PORTF |= (1 << PORTF4);
-#endif
-    t1on = micros();
-    toff += t1on - t1off;
-
-    delayMicroseconds(timeon[i]);
+        delayMicroseconds(timeon[i]);
+    }
 
 #if USE_74HC595 == true
     PORTE |= (1 << PORTE6);                           // digitalWrite(sr_oe, INACTIVE_AL);
@@ -431,13 +332,12 @@ void loop()
 #if ALWAYS_ON == false
     if ((millis() - thistime) >= 333)
     {
-      thisdata++;
-      if (thisdata >= B00010000) thisdata = 0;
+      thisdata[0]++;
+      if (thisdata[0] >= B00010000) thisdata[0] = 0;
+      thisdata[1] = thisdata[0];
+      thisdata[2] = thisdata[0];
+      thisdata[3] = thisdata[0];
       thistime = millis();
-      //i++;
-      //if (i == 4) i = 0;
-      //Serial.print(timeon[i]);
-      //Serial.print("\n");
     }
 #endif
 
@@ -447,12 +347,6 @@ void loop()
     static boolean done = false;
     if (!done)
     {
-#if USE_74HC595 == true
-    PORTE |= (1 << PORTE6);                           // digitalWrite(sr_oe, INACTIVE_AL);
-#else
-    PORTF &= B00001111;
-#endif
-      
       Serial.print("\n");
       Serial.print("\n");
       Serial.print("LED CUBE STATISTICS\n");
