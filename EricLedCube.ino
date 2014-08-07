@@ -10,7 +10,7 @@
 #define ALWAYS_ON true
 #define ALWAYS_ON_EFFET 2
 
-#define NB_MAX_EFFET 5
+#define NB_MAX_EFFET 6
 
 #define USE_74HC595 false
 #define USE_IRQ_TIMER1 false
@@ -32,7 +32,7 @@ boolean isInit = false;
 
 byte currentp = 0;
 volatile byte data = 0x00;
-volatile byte thisdata[4] = {0, 0, 0, 0};
+volatile byte thisdata[4] = {0x00, 0x00, 0x00, 0x00};
 
 
 void message(int nb)
@@ -65,6 +65,19 @@ void setup() {
   pinMode(A3, OUTPUT);
 #endif
 
+#if USE_74HC595 == true
+  digitalWrite(sr_oe, INACTIVE_AL);
+  digitalWrite(sr_rclk, LOW);
+  shiftOut(sr_ser, sr_srclk, MSBFIRST, B00000000);
+  digitalWrite(sr_rclk, HIGH);
+  digitalWrite(sr_oe, ACTIVE_AL);
+#else
+  digitalWrite(A0, LOW);
+  digitalWrite(A1, LOW);
+  digitalWrite(A2, LOW);
+  digitalWrite(A3, LOW);
+#endif
+
   cli();//stop interrupts
 
   //set timer1 interrupt at 735Hz
@@ -82,21 +95,7 @@ void setup() {
 
   sei();//allow interrupts
 
-
   Serial.begin(115200);
-
-#if USE_74HC595 == true
-  digitalWrite(sr_oe, INACTIVE_AL);
-  digitalWrite(sr_rclk, LOW);
-  shiftOut(sr_ser, sr_srclk, MSBFIRST, B00000000);
-  digitalWrite(sr_rclk, HIGH);
-  digitalWrite(sr_oe, ACTIVE_AL);
-#else
-  digitalWrite(A0, LOW);
-  digitalWrite(A1, LOW);
-  digitalWrite(A2, LOW);
-  digitalWrite(A3, LOW);
-#endif
 
   delay(1);
 
@@ -107,25 +106,27 @@ void setup() {
   }
 }
 
-void updateLeds()
-{
-#if USE_74HC595 == true
-    digitalWrite(sr_oe, INACTIVE_AL);
-#endif
-    shiftOut(shin, clock, LSBFIRST, data);
-#if USE_74HC595 == true
-    digitalWrite(sr_oe, ACTIVE_AL);	  
-#endif
-}
-
 void effetRandom()
 {
   if (!isInit)
   {
-    randomSeed(analogRead(0));
+    randomSeed(analogRead(A4));
     isInit = true;
   }
-  data = random(256);
+  data = random(16);
+}
+
+void effetBinaryCounter()
+{
+  if (!isInit)
+  {
+    data = 0x00;
+    isInit = true;
+  }
+  if (data == 0x0F)
+      data = 0;
+  else
+      data++;
 }
 
 void effetChaserContinu()
@@ -134,12 +135,12 @@ void effetChaserContinu()
   
   if (!isInit)
   {
-    data = B10000000;
+    data = B00001000;
     isInit = true;
   }
   else
   {
-    if ((data == 0xFF) && goingRight)
+    if ((data == 0x0F) && goingRight)
     {
       goingRight = false;
       data = B11111110;
@@ -240,25 +241,12 @@ ISR(TIMER1_COMPA_vect)
 #if USE_IRQ_TIMER1 == true
 void loop()
 {
-  boolean count = false;
-  if (count)
-  {
-    data++;
-    if (data >= B00010000) data = 0;
+    updateAnimation();
     thisdata[0] = data;
     thisdata[1] = data;
     thisdata[2] = data;
     thisdata[3] = data;
-  }
-  else
-  {
-    data=B00001111;
-    thisdata[0] = B1111;
-    thisdata[1] = B1111;
-    thisdata[2] = B1111;
-    thisdata[3] = B1111;
-  }
-  delay(333);
+    delay(wait);
 }
 #endif
 
@@ -329,18 +317,15 @@ void loop()
     t += t2 - t1;
     n++;
 
-#if ALWAYS_ON == false
-    if ((millis() - thistime) >= 333)
+    if ((millis() - thistime) >= wait)
     {
-      thisdata[0]++;
-      if (thisdata[0] >= B00010000) thisdata[0] = 0;
-      thisdata[1] = thisdata[0];
-      thisdata[2] = thisdata[0];
-      thisdata[3] = thisdata[0];
-      thistime = millis();
+        updateAnimation();
+        thisdata[0] = data;
+        thisdata[1] = data;
+        thisdata[2] = data;
+        thisdata[3] = data;
+        thistime = millis();
     }
-#endif
-
   }
   else
   {
@@ -368,7 +353,7 @@ void loop()
 }
 #endif
 
-void loop3()
+void updateAnimation()
 {
   static byte effet = 1;
   static unsigned long elapsed = millis();
@@ -391,12 +376,14 @@ void loop3()
 	case 5:
 	  effetAllUp();
 	  break;
+	case 6:
+	  effetBinaryCounter();
+	  break;
   }
   
   if (millis() - elapsed >= 3000)
   {
-	if (!ALWAYS_ON)
-      effet = effet + 1;
+	if (!ALWAYS_ON) effet = effet + 1;
     if (effet > NB_MAX_EFFET) effet = 1;
     isInit = false;
     
@@ -404,9 +391,6 @@ void loop3()
 
     elapsed = millis();
   }
-  
-  updateLeds();
-  delay(wait);
 }
 
 // the loop routine runs over and over again forever:
