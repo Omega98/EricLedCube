@@ -1,5 +1,5 @@
 /*
-  EricLedCube
+  EricLedCube - TEST
  */
 
 #define ACTIVE_AL LOW

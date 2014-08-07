@@ -41,20 +41,20 @@ extern "C" void __cxa_pure_virtual() {;}
 
 void message(int nb);
 //
-void updateLeds();
 void effetRandom();
+void effetBinaryCounter();
 void effetChaserContinu();
 void effetChaser();
 void effetChaserDouble();
 void effetAllUp();
 inline void inttimer1(void);
-void loop5();
 //
-void loop3();
+//
+void updateAnimation();
 void loop2();
 void loop1();
 
-#include "C:\Program Files (x86)\Arduino\hardware\arduino\cores\arduino\arduino.h"
-#include "C:\Program Files (x86)\Arduino\hardware\arduino\variants\leonardo\pins_arduino.h" 
-#include "C:\Users\Eric\Documents\Arduino\EricLedCube\EricLedCube.ino"
+#include "C:\Program Files\Arduino\hardware\arduino\cores\arduino\arduino.h"
+#include "C:\Program Files\Arduino\hardware\arduino\variants\leonardo\pins_arduino.h" 
+#include "Z:\EricLedCube\EricLedCube.ino"
 #endif
