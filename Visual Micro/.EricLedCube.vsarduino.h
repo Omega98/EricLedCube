@@ -51,8 +51,6 @@ inline void inttimer1(void);
 //
 //
 void updateAnimation();
-void loop2();
-void loop1();
 
 #include "C:\Program Files\Arduino\hardware\arduino\cores\arduino\arduino.h"
 #include "C:\Program Files\Arduino\hardware\arduino\variants\leonardo\pins_arduino.h" 

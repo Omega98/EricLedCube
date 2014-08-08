@@ -1,5 +1,5 @@
 /*
-  EricLedCube - TEST
+  EricLedCube
  */
 
 #define ACTIVE_AL LOW
@@ -8,7 +8,7 @@
 #define INACTIVE_AH LOW
 
 #define ALWAYS_ON true
-#define ALWAYS_ON_EFFET 2
+#define ALWAYS_ON_EFFET 5
 
 #define NB_MAX_EFFET 6
 
@@ -106,95 +106,103 @@ void setup() {
   }
 }
 
+// Allume de 0 a 4 LEDs au hasard.
 void effetRandom()
 {
-  if (!isInit)
-  {
-    randomSeed(analogRead(A4));
-    isInit = true;
-  }
-  data = random(16);
+    if (!isInit)
+    {
+        randomSeed(analogRead(A4));
+        isInit = true;
+    }
+    data = random(B1111 + 1);
 }
 
+// Allume les LEDs suivant un compteur binaire.
 void effetBinaryCounter()
 {
-  if (!isInit)
-  {
-    data = 0x00;
-    isInit = true;
-  }
-  if (data == 0x0F)
-      data = 0;
-  else
-      data++;
+    if (!isInit)
+    {
+        data = B0000;
+        isInit = true;
+    }
+    if (data == B1111)
+        data = B0000;
+    else
+        data++;
 }
 
+// Allume les LEDs de gauche a droite et les
+// eteint de droite a gauche.
 void effetChaserContinu()
 {
-  static boolean goingRight = true;
-  
-  if (!isInit)
-  {
-    data = B00001000;
-    isInit = true;
-  }
-  else
-  {
-    if ((data == 0x0F) && goingRight)
+    static boolean goingRight = true;
+
+    if (!isInit)
     {
-      goingRight = false;
-      data = B11111110;
+        data = B1000;
+        isInit = true;
     }
-    else if ((data == B10000000) && !goingRight)
-    {
-      goingRight = true;
-      data = B11000000;
-    }
-    else if (goingRight)
-      data = data | (data >> 1);
     else
-      data = data & (data << 1);
-  }
+    {
+        if (data == B1111)
+        {
+            goingRight = false;
+        }
+        else if (data == B1000)
+        {
+            goingRight = true;
+        }
+        
+        if (goingRight)
+            data = data | (data >> 1);
+        else
+            data = data & (data << 1);
+    }
 }
 
+// Allume un LED un apres l'autre vers la droite et
+// recommence a gauche.
 void effetChaser()
 {
-  if (!isInit)
-  {
-    data = B10000000;
-    isInit = true;
-  }
-  else
-  {
-    if (data == 0x01)
-      data = B10000000;
+    if (!isInit)
+    {
+        data = B1000;
+        isInit = true;
+    }
     else
-      data = data >> 1;
-  }
+    {
+        if (data == B0001)
+            data = B1000;
+        else
+            data = data >> 1;
+    }
 }
 
+// Allume les LEDs 3 et 1, ensuite les LEDs 2 et 0.
 void effetChaserDouble()
 {
-  if (!isInit)
-  {
-    data = B10001000;
-    isInit = true;
-  }
-  else
-  {
-    data = data >> 1;
-    if (data == B00001000)
-      data = B10001000;
-  }
+    if (!isInit)
+    {
+        data = B1010;
+        isInit = true;
+    }
+    else
+    {
+        if (data == B0101)
+            data = B1010;
+        else
+            data = data >> 1;
+    }
 }
 
+// Allume toutes les LEDs.
 void effetAllUp()
 {
-  if (!isInit)
-  {
-    data = B11111111;
-    isInit = true;
-  }
+    if (!isInit)
+    {
+        data = B1111;
+        isInit = true;
+    }
 }
 
 #if USE_IRQ_TIMER1 == true
@@ -209,18 +217,18 @@ inline void inttimer1(void)
 
     for(int i=0; i<8; i++)
     {
-      PORTD &= ~(1 << PORTD1);
-      PORTD = (PORTD & ~(1 << PORTD0)) | ((((data2[currentp] << 4) >> i) & 1) << PORTD0);
-      PORTD |= (1 << PORTD1);
+        PORTD &= ~(1 << PORTD1);
+        PORTD = (PORTD & ~(1 << PORTD0)) | (((thisdata[currentp] >> i) & 1) << PORTD0);
+        PORTD |= (1 << PORTD1);
     }                                                 // shiftOut(shin, clock, LSBFIRST, thisdata << 4);
-    
+
 #if USE_74HC595 == true
     PORTB &= ~(1 << PORTB4);                          // digitalWrite(sr_rclk, LOW);
     for(int i=7; i>=0; i--)
     {
-      PORTB &= ~(1 << PORTB6);
-      PORTC = (PORTC & ~(1 << PORTC6)) | ((((1 << currentp) >> i) & 1) << PORTC6);
-      PORTB |= (1 << PORTB6);
+        PORTB &= ~(1 << PORTB6);
+        PORTC = (PORTC & ~(1 << PORTC6)) | ((((1 << currentp) >> i) & 1) << PORTC6);
+        PORTB |= (1 << PORTB6);
     }                                                 // shiftOut(sr_ser, sr_srclk, MSBFIRST, B00000001);
     PORTB |= (1 << PORTB4);                           // digitalWrite(sr_rclk, HIGH);
     PORTE &= ~(1 << PORTE6);                          // digitalWrite(sr_oe, ACTIVE_AL);
@@ -228,14 +236,13 @@ inline void inttimer1(void)
     PORTF |= (1 << currentp + 4);
 #endif
 
-    currentp++;
-    if (currentp > 3) currentp = 0;
+    if (currentp >= 3) 
+        currentp = 0;
+    else
+        currentp++;
 }
 
-ISR(TIMER1_COMPA_vect)
-{
-	inttimer1();
-}
+ISR(TIMER1_COMPA_vect) { inttimer1(); }
 #endif
 
 #if USE_IRQ_TIMER1 == true
@@ -253,180 +260,145 @@ void loop()
 #if USE_IRQ_TIMER1 == false
 void loop()
 {
-  static int i = 0;
-  int timeon[4] = {76, 450, 1000, 2500};
+    static int i = 0;
+    int timeon[4] = {76, 450, 1000, 2500};
 
-  static unsigned long t = 0;
-  static unsigned long n = 0;
+    static unsigned long t = 0;
+    static unsigned long n = 0;
 
-  static unsigned long ton = 0;
-  static unsigned long ton_n = 0;
+    static unsigned long ton = 0;
+    static unsigned long ton_n = 0;
 
-  static unsigned long toff = 0;
-  static unsigned long toff_n = 0;
+    static unsigned long toff = 0;
+    static unsigned long toff_n = 0;
 
-  if (n < 10000)
-  {
-    unsigned long t1 = micros();
-    unsigned long t1off;
-    unsigned long t1on;
-
-    static unsigned long thistime = millis();
-
-    for(int plane=0; plane<4; plane++)
+    if (n < 10000)
     {
+        unsigned long t1 = micros();
+        unsigned long t1off;
+        unsigned long t1on;
+
+        static unsigned long thistime = millis();
+
+        for(int plane=0; plane<4; plane++)
+        {
+#if USE_74HC595 == true
+            PORTE |= (1 << PORTE6);                           // digitalWrite(sr_oe, INACTIVE_AL);
+#else
+            PORTF &= B00001111; 
+#endif
+            t1off = t1;
+            for(int i=0; i<8; i++)
+            {
+                PORTD &= ~(1 << PORTD1);
+                PORTD = (PORTD & ~(1 << PORTD0)) | (((thisdata[plane] >> i) & 1) << PORTD0);
+                PORTD |= (1 << PORTD1);
+            }                                                 // shiftOut(shin, clock, LSBFIRST, thisdata << 4);
+#if USE_74HC595 == true
+            PORTB &= ~(1 << PORTB4);                          // digitalWrite(sr_rclk, LOW);
+            for(int i=7; i>=0; i--)
+            {
+                PORTB &= ~(1 << PORTB6);
+                PORTC = (PORTC & ~(1 << PORTC6)) | ((((1 << plane) >> i) & 1) << PORTC6);
+                PORTB |= (1 << PORTB6);
+            }                                                 // shiftOut(sr_ser, sr_srclk, MSBFIRST, B00000001);
+            PORTB |= (1 << PORTB4);                           // digitalWrite(sr_rclk, HIGH);
+            PORTE &= ~(1 << PORTE6);                          // digitalWrite(sr_oe, ACTIVE_AL);
+#else
+            PORTF |= (1 << PORTF7);
+#endif
+            t1on = micros();
+            toff += t1on - t1off;
+
+            delayMicroseconds(timeon[i]);
+        }
+
 #if USE_74HC595 == true
         PORTE |= (1 << PORTE6);                           // digitalWrite(sr_oe, INACTIVE_AL);
 #else
-        PORTF &= B00001111; 
+        PORTF &= B00001111;
 #endif
-        t1off = t1;
-        for(int i=0; i<8; i++)
+
+        unsigned long t2 = micros();
+        ton += t2 - t1on;
+        t += t2 - t1;
+        n++;
+
+        if ((millis() - thistime) >= wait)
         {
-          PORTD &= ~(1 << PORTD1);
-          PORTD = (PORTD & ~(1 << PORTD0)) | ((((thisdata[plane] << 4) >> i) & 1) << PORTD0);
-          PORTD |= (1 << PORTD1);
-        }                                                 // shiftOut(shin, clock, LSBFIRST, thisdata << 4);
-#if USE_74HC595 == true
-        PORTB &= ~(1 << PORTB4);                          // digitalWrite(sr_rclk, LOW);
-        for(int i=7; i>=0; i--)
+            updateAnimation();
+            thisdata[0] = data;
+            thisdata[1] = data;
+            thisdata[2] = data;
+            thisdata[3] = data;
+            thistime = millis();
+        }
+    }
+    else
+    {
+        static boolean done = false;
+        if (!done)
         {
-          PORTB &= ~(1 << PORTB6);
-          PORTC = (PORTC & ~(1 << PORTC6)) | ((((1 << plane) >> i) & 1) << PORTC6);
-          PORTB |= (1 << PORTB6);
-        }                                                 // shiftOut(sr_ser, sr_srclk, MSBFIRST, B00000001);
-        PORTB |= (1 << PORTB4);                           // digitalWrite(sr_rclk, HIGH);
-        PORTE &= ~(1 << PORTE6);                          // digitalWrite(sr_oe, ACTIVE_AL);
-#else
-        PORTF |= (1 << PORTF7);
-#endif
-        t1on = micros();
-        toff += t1on - t1off;
-    
-        delayMicroseconds(timeon[i]);
+            Serial.print("\n");
+            Serial.print("\n");
+            Serial.print("LED CUBE STATISTICS\n");
+            Serial.print("\n");
+            Serial.print("time on delay="); Serial.print(timeon[i]); Serial.print("us\n");
+            //Serial.print("t="); Serial.print(t); Serial.print("ms\n");
+            //Serial.print("n="); Serial.print(n); Serial.print(" times\n");
+            Serial.print("loop="); Serial.print((double)t / (double)n); Serial.print("us\n");
+            //Serial.print("toff="); Serial.print(toff); Serial.print("ms\n");
+            Serial.print("toff/loop="); Serial.print((double)toff / (double)n); Serial.print("us\n");
+            //Serial.print("ton="); Serial.print(ton); Serial.print("ms\n");
+            Serial.print("ton/loop="); Serial.print((double)ton / (double)n); Serial.print("us\n");
+            Serial.print("duty cycle="); Serial.print(100.0 * ((double)ton / (double)n) / ((double)t / (double)n)); Serial.print("%\n");
+            Serial.print("refresh rate="); Serial.print(1000000.0 / ((double)t / (double)n)); Serial.print("Hz\n");
+            Serial.print("\n");
+        }
+        done = true;
     }
-
-#if USE_74HC595 == true
-    PORTE |= (1 << PORTE6);                           // digitalWrite(sr_oe, INACTIVE_AL);
-#else
-    PORTF &= B00001111;
-#endif
-
-    unsigned long t2 = micros();
-    ton += t2 - t1on;
-    t += t2 - t1;
-    n++;
-
-    if ((millis() - thistime) >= wait)
-    {
-        updateAnimation();
-        thisdata[0] = data;
-        thisdata[1] = data;
-        thisdata[2] = data;
-        thisdata[3] = data;
-        thistime = millis();
-    }
-  }
-  else
-  {
-    static boolean done = false;
-    if (!done)
-    {
-      Serial.print("\n");
-      Serial.print("\n");
-      Serial.print("LED CUBE STATISTICS\n");
-      Serial.print("\n");
-      Serial.print("time on delay="); Serial.print(timeon[i]); Serial.print("us\n");
-      //Serial.print("t="); Serial.print(t); Serial.print("ms\n");
-      //Serial.print("n="); Serial.print(n); Serial.print(" times\n");
-      Serial.print("loop="); Serial.print((double)t / (double)n); Serial.print("us\n");
-      //Serial.print("toff="); Serial.print(toff); Serial.print("ms\n");
-      Serial.print("toff/loop="); Serial.print((double)toff / (double)n); Serial.print("us\n");
-      //Serial.print("ton="); Serial.print(ton); Serial.print("ms\n");
-      Serial.print("ton/loop="); Serial.print((double)ton / (double)n); Serial.print("us\n");
-      Serial.print("duty cycle="); Serial.print(100.0 * ((double)ton / (double)n) / ((double)t / (double)n)); Serial.print("%\n");
-      Serial.print("refresh rate="); Serial.print(1000000.0 / ((double)t / (double)n)); Serial.print("Hz\n");
-      Serial.print("\n");
-    }
-    done = true;
-  }
 }
 #endif
 
 void updateAnimation()
 {
-  static byte effet = 1;
-  static unsigned long elapsed = millis();
-  
-  if (ALWAYS_ON) effet = ALWAYS_ON_EFFET;
+    static byte effet = 1;
+    static unsigned long elapsed = millis();
 
-  switch(effet) {
+    if (ALWAYS_ON) effet = ALWAYS_ON_EFFET;
+
+    switch(effet) {
     case 1: 
-      effetRandom();
-      break;
+        effetRandom();
+        break;
     case 2:
-      effetChaserContinu();
-      break;
+        effetChaserContinu();
+        break;
     case 3:
-      effetChaser();
-      break;
+        effetChaser();
+        break;
     case 4:
-      effetChaserDouble();
-      break;
-	case 5:
-	  effetAllUp();
-	  break;
-	case 6:
-	  effetBinaryCounter();
-	  break;
-  }
-  
-  if (millis() - elapsed >= 3000)
-  {
-	if (!ALWAYS_ON) effet = effet + 1;
-    if (effet > NB_MAX_EFFET) effet = 1;
-    isInit = false;
-    
-    message(3);
+        effetChaserDouble();
+        break;
+    case 5:
+        effetAllUp();
+        break;
+    case 6:
+        effetBinaryCounter();
+        break;
+    }
 
-    elapsed = millis();
-  }
-}
+    if (millis() - elapsed >= 3000)
+    {
+        isInit = false;
 
-// the loop routine runs over and over again forever:
-void loop2() {
-//  digitalWrite(led, HIGH);   // turn the LED on (HIGH is the voltage level)
-//  delay(1000);               // wait for a second
-//  digitalWrite(led, LOW);    // turn the LED off by making the voltage LOW
-//  delay(1000);               // wait for a second
-  
-  digitalWrite(shin, HIGH);
-  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);   delay(wait);
-  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);   delay(wait);
-  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);   delay(wait);
-  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);   delay(wait);
-  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);   delay(wait);
-  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);   delay(wait);
-  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);   delay(wait);
-  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);   delay(wait);
+        if (effet >= NB_MAX_EFFET) 
+            effet = 1;
+        else
+            effet = effet + 1;
 
-  digitalWrite(shin, LOW);
-  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);   delay(wait);
-  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);   delay(wait);
-  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);   delay(wait);
-  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);   delay(wait);
-  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);   delay(wait);
-  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);   delay(wait);
-  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);   delay(wait);
-  digitalWrite(clock, LOW);   digitalWrite(clock, HIGH);   delay(wait);
-  
-}
+        message(3);
 
-// the loop routine runs over and over again forever:
-void loop1() {
-  digitalWrite(led, HIGH);   // turn the LED on (HIGH is the voltage level)
-  delay(1000);               // wait for a second
-  digitalWrite(led, LOW);    // turn the LED off by making the voltage LOW
-  delay(1000);               // wait for a second
- 
+        elapsed = millis();
+    }
 }
