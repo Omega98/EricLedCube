@@ -13,7 +13,7 @@
 #define NB_MAX_EFFET 6
 
 #define USE_74HC595 false
-#define USE_IRQ_TIMER1 false
+#define USE_IRQ_TIMER1 true
 
 // Pin 13 has an LED connected on most Arduino boards.
 int led = 13;  // PORTC7
@@ -78,22 +78,24 @@ void setup() {
   digitalWrite(A3, LOW);
 #endif
 
-  cli();//stop interrupts
+#if USE_IRQ_TIMER1 == true    
+    cli();//stop interrupts
 
-  //set timer1 interrupt at 735Hz
-  TCCR1A = 0;// set entire TCCR1A register to 0
-  TCCR1B = 0;// same for TCCR1B
-  TCNT1  = 0;//initialize counter value to 0
-  // set compare match register for 735hz increments
-  OCR1A = 2720;// = (16*10^6) / (735*8) - 1 (must be <65536)
-  // turn on CTC mode
-  TCCR1B |= (1 << WGM12);
-  // Set CS11 bit for 8 prescaler
-  TCCR1B |= (1 << CS11);
-  // enable timer compare interrupt
-  TIMSK1 |= (1 << OCIE1A);
+    //set timer1 interrupt at 735Hz
+    TCCR1A = 0;// set entire TCCR1A register to 0
+    TCCR1B = 0;// same for TCCR1B
+    TCNT1  = 0;//initialize counter value to 0
+    // set compare match register for 735hz increments
+    OCR1A = 399;// = (16*10^6) / (735*8) - 1 (must be <65536)
+    // turn on CTC mode
+    TCCR1B |= (1 << WGM12);
+    // Set CS11 bit for 8 prescaler
+    TCCR1B |= (1 << CS11);
+    // enable timer compare interrupt
+    TIMSK1 |= (1 << OCIE1A);
 
-  sei();//allow interrupts
+    sei();//allow interrupts
+#endif
 
   Serial.begin(115200);
 

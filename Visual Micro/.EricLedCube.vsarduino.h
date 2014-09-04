@@ -52,7 +52,7 @@ inline void inttimer1(void);
 //
 void updateAnimation();
 
-#include "C:\Program Files\Arduino\hardware\arduino\cores\arduino\arduino.h"
-#include "C:\Program Files\Arduino\hardware\arduino\variants\leonardo\pins_arduino.h" 
-#include "Z:\EricLedCube\EricLedCube.ino"
+#include "C:\Program Files (x86)\Arduino\hardware\arduino\cores\arduino\arduino.h"
+#include "C:\Program Files (x86)\Arduino\hardware\arduino\variants\leonardo\pins_arduino.h" 
+#include "C:\Users\Eric\Documents\Arduino\EricLedCube\EricLedCube.ino"
 #endif
